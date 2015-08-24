@@ -8,7 +8,9 @@ module Diffy
 
     def to_s
       if @options[:highlight_words]
-        wrap_lines(highlighted_words)
+        highlighted_words.map do |diff_array|
+          wrap_lines(diff_array)
+        end
       else
         wrap_lines(@diff.map{|line| wrap_line(ERB::Util.h(line))})
       end
@@ -84,8 +86,26 @@ module Diffy
           ERB::Util.h(chunk1)
         end
       end.flatten
-      lines.map{|line| line.each_line.map(&:chomp).to_a if line }.flatten.compact.
+
+      left = []
+      right = []
+      lines.each do |line|
+        if line && line[0] == '+'
+          right << line
+        elsif line && line[0] == '-'
+          left << line
+        else
+          left << line
+          right << line
+        end
+      end
+      left = left.map{|line| line.each_line.map(&:chomp).to_a if line }.flatten.compact.
         map{|line|wrap_line(line) }.compact
+      right = right.map{|line| line.each_line.map(&:chomp).to_a if line }.flatten.compact.
+        map{|line|wrap_line(line) }.compact
+
+      [left, right]
+
     end
 
     def split_characters(chunk)
